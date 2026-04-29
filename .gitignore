@@ -14,3 +14,5 @@ DerivedData/
 
 # Superpowers / Claude
 .superpowers/
+.claude/
+docs/
