@@ -1,6 +1,7 @@
 import XCTest
 @testable import iBanner
 
+@MainActor
 final class BannerTimerManagerTests: XCTestCase {
 
     func test_start_firesAfterInterval() {
