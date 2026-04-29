@@ -9,10 +9,10 @@ public struct BannerView<Item: Identifiable, Content: View>: View {
     private var customIndicator: ((Int, Int) -> AnyView)?
 
     // MARK: - Configuration (set via modifiers)
-    var autoPlayInterval: TimeInterval? = 3
-    var indicatorStyle: BannerIndicatorStyle = .dot()
-    var indicatorAlignment: Alignment = .bottom
-    var onPageChangedHandler: ((Int, Item) -> Void)?
+    private var autoPlayInterval: TimeInterval? = 3
+    private var indicatorStyle: BannerIndicatorStyle = .dot()
+    private var indicatorAlignment: Alignment = .bottom
+    private var onPageChangedHandler: ((Int, Item) -> Void)?
 
     // MARK: - State
     @State private var currentIndex: Int = 0
@@ -38,7 +38,6 @@ public struct BannerView<Item: Identifiable, Content: View>: View {
                 scrollProgress: $scrollProgress,
                 onPageChanged: onPageChangedHandler
             )
-            .ignoresSafeArea()
 
             if items.count > 1 {
                 indicatorView
