@@ -1,6 +1,16 @@
+# macOS
 .DS_Store
-.build/
-*.xcodeproj
+
+# Xcode
+*.xcuserstate
 xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+
+# Swift Package Manager
+.build/
 .swiftpm/
+
+# Superpowers / Claude
 .superpowers/
