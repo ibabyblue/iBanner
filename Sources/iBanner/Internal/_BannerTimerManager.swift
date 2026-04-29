@@ -50,5 +50,5 @@ final class _BannerTimerManager {
         source = t
     }
 
-    deinit { stop() }
+    deinit { MainActor.assumeIsolated { stop() } }
 }
