@@ -1,8 +1,8 @@
 import SwiftUI
 
-// Peek Banner 使用 iOS 17 原生 ScrollView API 实现，与 iBanner 全屏方案互补。
-// iBanner 内核的 UIScrollView 三页复用不支持裁剪外区域可见，因此 peek 场景改用
-// scrollTargetBehavior(.viewAligned) + containerRelativeFrame + contentMargins 实现。
+// Peek 效果使用 iOS 17 原生 ScrollView API 实现。
+// iBanner 的三页虚拟复用方案让 ScrollView 与容器等宽，天然不支持露出相邻 item。
+// 两者定位互补：iBanner 做全屏广告 Banner，原生 ScrollView 做卡片 Peek 列表。
 
 struct PeekBannerDemo: View {
     var body: some View {
@@ -11,16 +11,14 @@ struct PeekBannerDemo: View {
 
                 // 1. 标准 Peek：两侧各露出约 30pt
                 PeekSection(
-                    title: "标准 Peek · 两侧各 ~30pt",
-                    subtitle: "card 宽度 = 屏宽 - 60，spacing = 12"
+                    title: "标准 Peek",
+                    subtitle: "card 宽 = 屏宽 - 60，两侧各露出 ~30pt"
                 ) {
                     ScrollView(.horizontal) {
                         HStack(spacing: 12) {
                             ForEach(sampleCards) { card in
                                 GradientCardView(card: card, cornerRadius: 14)
-                                    .containerRelativeFrame(.horizontal) { width, _ in
-                                        width - 60
-                                    }
+                                    .containerRelativeFrame(.horizontal) { w, _ in w - 60 }
                                     .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
                             }
                         }
@@ -32,18 +30,16 @@ struct PeekBannerDemo: View {
                     .frame(height: 180)
                 }
 
-                // 2. 大 Peek：相邻 card 露出约 12.5% 屏宽
+                // 2. 大 Peek：card 宽 75%，相邻露出更多
                 PeekSection(
-                    title: "大 Peek · card 宽度 75% 屏宽",
-                    subtitle: "两侧各露出 ~12.5% 屏宽，视觉层次更强"
+                    title: "大 Peek",
+                    subtitle: "card 宽 75% 屏宽，视觉层次感更强"
                 ) {
                     ScrollView(.horizontal) {
                         HStack(spacing: 16) {
                             ForEach(sampleCards) { card in
                                 GradientCardView(card: card, cornerRadius: 18)
-                                    .containerRelativeFrame(.horizontal) { width, _ in
-                                        width * 0.75
-                                    }
+                                    .containerRelativeFrame(.horizontal) { w, _ in w * 0.75 }
                                     .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
                             }
                         }
@@ -55,21 +51,16 @@ struct PeekBannerDemo: View {
                     .frame(height: 160)
                 }
 
-                // 3. 竖向卡片 Peek（适合内容列表场景）
+                // 3. 竖向高卡片 Peek
                 PeekSection(
-                    title: "竖向卡片 Peek",
-                    subtitle: "card 宽度 80% 屏宽，圆角更大"
+                    title: "高卡片 Peek",
+                    subtitle: "card 宽 80%，适合内容丰富的卡片场景"
                 ) {
                     ScrollView(.horizontal) {
                         HStack(spacing: 14) {
                             ForEach(sampleCards) { card in
                                 GradientCardView(card: card, cornerRadius: 20)
-                                    .containerRelativeFrame(.horizontal) { width, _ in
-                                        width * 0.8
-                                    }
-                                    .containerRelativeFrame(.vertical) { height, _ in
-                                        height
-                                    }
+                                    .containerRelativeFrame(.horizontal) { w, _ in w * 0.8 }
                                     .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
                             }
                         }
@@ -89,15 +80,13 @@ struct PeekBannerDemo: View {
     }
 }
 
-// MARK: - Helper
-
 private struct PeekSection<Content: View>: View {
     let title: String
     let subtitle: String
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -105,13 +94,9 @@ private struct PeekSection<Content: View>: View {
                 .padding(.horizontal)
             Text(subtitle)
                 .font(.caption)
-                .foregroundStyle(Color.secondary.opacity(0.7))
+                .foregroundStyle(.tertiary)
                 .padding(.horizontal)
             content()
         }
     }
-}
-
-#Preview {
-    NavigationStack { PeekBannerDemo() }
 }

@@ -1,9 +1,7 @@
 import SwiftUI
 
-public struct DemoRootView: View {
-    public init() {}
-
-    public var body: some View {
+struct ContentView: View {
+    var body: some View {
         TabView {
             NavigationStack {
                 FullScreenBannerDemo()
@@ -20,8 +18,4 @@ public struct DemoRootView: View {
             }
         }
     }
-}
-
-#Preview {
-    DemoRootView()
 }

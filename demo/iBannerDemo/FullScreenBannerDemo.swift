@@ -6,7 +6,7 @@ struct FullScreenBannerDemo: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
 
-                // 1. 自定义 View + Dot 指示器
+                // 1. 自定义 View + Dot 指示器（默认自动播放 3s）
                 DemoSection(title: "自定义 View · Dot 指示器") {
                     BannerView(items: sampleCards) { card in
                         GradientCardView(card: card)
@@ -26,7 +26,7 @@ struct FullScreenBannerDemo: View {
                     .frame(height: 200)
                 }
 
-                // 3. 自定义指示器（数字样式）+ 翻页回调
+                // 3. 自定义数字指示器 + 翻页回调
                 DemoSection(title: "自定义指示器 · 数字 + 回调") {
                     BannerView(items: sampleCards) { card in
                         GradientCardView(card: card)
@@ -45,8 +45,8 @@ struct FullScreenBannerDemo: View {
                     .frame(height: 200)
                 }
 
-                // 4. 禁用自动播放（纯手动滑动）
-                DemoSection(title: "禁用自动播放 · 仅手动滑动") {
+                // 4. 禁用自动播放，自定义颜色
+                DemoSection(title: "禁用自动播放 · 手动滑动") {
                     BannerView(items: sampleCards) { card in
                         GradientCardView(card: card)
                     }
@@ -63,8 +63,6 @@ struct FullScreenBannerDemo: View {
     }
 }
 
-// MARK: - Helper
-
 private struct DemoSection<Content: View>: View {
     let title: String
     @ViewBuilder let content: () -> Content
@@ -79,8 +77,4 @@ private struct DemoSection<Content: View>: View {
             content()
         }
     }
-}
-
-#Preview {
-    NavigationStack { FullScreenBannerDemo() }
 }

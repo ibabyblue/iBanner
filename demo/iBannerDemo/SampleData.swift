@@ -1,7 +1,4 @@
 import SwiftUI
-import iBanner
-
-// MARK: - Demo Data Model
 
 struct BannerCard: Identifiable {
     let id: Int
@@ -48,8 +45,6 @@ let sampleCards: [BannerCard] = [
         subtitle: "仅剩最后 3 件"
     ),
 ]
-
-// MARK: - Reusable Card View
 
 struct GradientCardView: View {
     let card: BannerCard
