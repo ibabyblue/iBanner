@@ -59,8 +59,8 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
     }
 
     deinit {
-        MainActor.assumeIsolated { timerManager.stop() }
         NotificationCenter.default.removeObserver(self)
+        // timerManager 由其自身的 deinit 负责清理
     }
 
     // MARK: - Setup
@@ -229,11 +229,17 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard items.count > 1 else { return }
+        guard items.count > 1, isLayoutInitialized else { return }
         let w = view.bounds.width
         guard w > 0 else { return }
         let progress = (scrollView.contentOffset.x - w) / w  // -1...1
         onScrollProgressChanged?(progress)
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if !decelerate {
+            handleScrollEnd(scrollView)
+        }
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {

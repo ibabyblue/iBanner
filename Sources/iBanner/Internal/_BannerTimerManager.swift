@@ -50,5 +50,10 @@ final class _BannerTimerManager {
         source = t
     }
 
-    deinit { MainActor.assumeIsolated { stop() } }
+    deinit {
+        if let source {
+            if isSuspended { source.resume() }
+            source.cancel()
+        }
+    }
 }

@@ -13,6 +13,7 @@ struct _BannerRepresentable<Item: Identifiable, Content: View>: UIViewController
 
     func makeUIViewController(context: Context) -> _BannerCarouselVC<Item, Content> {
         let vc = _BannerCarouselVC(items: items, contentBuilder: contentBuilder)
+        vc.setAutoPlay(interval: autoPlayInterval)
         updateCallbacks(on: vc)
         return vc
     }
