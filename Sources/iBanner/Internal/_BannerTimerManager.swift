@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class _BannerTimerManager {
     private var source: DispatchSourceTimer?
     private var isSuspended = false
