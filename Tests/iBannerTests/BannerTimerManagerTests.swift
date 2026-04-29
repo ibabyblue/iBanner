@@ -25,7 +25,7 @@ final class BannerTimerManagerTests: XCTestCase {
         let exp = expectation(description: "fires after resume")
         sut.start(interval: 0.05) { exp.fulfill() }
         sut.pause()
-        // 等待超过 interval，仍不应触发
+        // GCD timer suspended — pending event accumulates; resume immediately fires it
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
         sut.resume()
         wait(for: [exp], timeout: 0.5)
