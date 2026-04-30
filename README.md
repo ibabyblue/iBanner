@@ -1,18 +1,18 @@
 # iBanner
 
-iOS 17+ 通用 Banner 无限轮播组件，UICollectionView 虚拟无限 section 内核，SwiftUI 对外接口，零三方依赖。
+A universal infinite-scroll banner component for iOS 17+. UICollectionView virtual-section core, SwiftUI public API, zero third-party dependencies.
 
-## 要求
+## Requirements
 
 - iOS 17+
 - Swift 5.9+
 - Xcode 15+
 
-## 安装
+## Installation
 
 ### Swift Package Manager
 
-在 Xcode 中选择 **File → Add Package Dependencies**，输入仓库地址，或在 `Package.swift` 中添加：
+In Xcode choose **File → Add Package Dependencies**, enter the repository URL, or add it directly to `Package.swift`:
 
 ```swift
 dependencies: [
@@ -20,9 +20,9 @@ dependencies: [
 ]
 ```
 
-## 快速上手
+## Quick Start
 
-### 自定义 View（推荐）
+### Custom View (recommended)
 
 ```swift
 import iBanner
@@ -33,15 +33,15 @@ BannerView(items: items) { item in
 .bannerAutoPlay(interval: 3)
 .bannerIndicator(.capsule())
 .onBannerPageChanged { index, item in
-    print("当前页: \(index)")
+    print("Current page: \(index)")
 }
 .frame(height: 200)
 ```
 
-### 内置模板（Item 遵循 BannerDisplayable）
+### Built-in Template (Item conforms to BannerDisplayable)
 
 ```swift
-// 声明数据模型
+// Declare your model
 struct Banner: BannerDisplayable {
     var id: Int
     var imageURL: URL?
@@ -49,13 +49,13 @@ struct Banner: BannerDisplayable {
     var subtitle: String?
 }
 
-// 直接使用，开箱即用
+// Use it out of the box
 BannerView(items: banners)
     .bannerIndicator(.dot(activeColor: .white))
     .frame(height: 200)
 ```
 
-### 完全自定义指示器
+### Fully Custom Indicator
 
 ```swift
 BannerView(items: items) { item in
@@ -70,33 +70,33 @@ BannerView(items: items) { item in
 }
 ```
 
-## API 参考
+## API Reference
 
 ### BannerDisplayable
 
-内置模板协议，所有字段均可选：
+Built-in template protocol — all fields are optional:
 
 ```swift
 public protocol BannerDisplayable: Identifiable {
-    var imageURL: URL? { get }   // 异步加载，使用系统 AsyncImage
-    var title: String? { get }   // 叠加在图片底部
-    var subtitle: String? { get } // title 下方，字号更小
+    var imageURL: URL? { get }    // async-loaded via system AsyncImage
+    var title: String? { get }    // overlaid at the bottom of the image
+    var subtitle: String? { get } // below title, smaller font
 }
 ```
 
 ### View Modifiers
 
-| Modifier | 说明 | 默认值 |
+| Modifier | Description | Default |
 |---|---|---|
-| `.bannerAutoPlay(interval:)` | 自动播放间隔，`nil` 或 `0` 关闭 | `3`（秒）|
-| `.bannerIndicator(_ style:)` | 内置指示器样式 | `.dot()` |
-| `.bannerIndicatorAlignment(_ alignment:)` | 指示器位置 | `.bottom` |
-| `.onBannerPageChanged(_ action:)` | 翻页回调，同时返回 index 和 item | — |
+| `.bannerAutoPlay(interval:)` | Auto-play interval; `nil` or `0` disables it | `3` (seconds) |
+| `.bannerIndicator(_ style:)` | Built-in indicator style | `.dot()` |
+| `.bannerIndicatorAlignment(_ alignment:)` | Indicator position | `.bottom` |
+| `.onBannerPageChanged(_ action:)` | Page-change callback, returns both index and item | — |
 
 ### BannerIndicatorStyle
 
 ```swift
-// 圆点：当前页高亮，其余半透明
+// Dot: active page highlighted, others semi-transparent
 .dot(
     activeColor: Color = .white,
     inactiveColor: Color = .white.opacity(0.35),
@@ -104,7 +104,7 @@ public protocol BannerDisplayable: Identifiable {
     spacing: CGFloat = 6
 )
 
-// 胶囊：当前页拉伸为胶囊，支持跟手动画
+// Capsule: active page stretches into a capsule, follows finger in real time
 .capsule(
     activeColor: Color = .white,
     inactiveColor: Color = .white.opacity(0.35),
@@ -114,33 +114,33 @@ public protocol BannerDisplayable: Identifiable {
 )
 ```
 
-## 边界行为
+## Edge-Case Behavior
 
-| 场景 | 行为 |
+| Scenario | Behavior |
 |---|---|
-| `items` 为空 | 渲染空白 View，不崩溃 |
-| `items.count == 1` | 禁用滑动，不显示指示器，不自动播放 |
-| `items` 运行时替换 | 重置 collection view，`currentIndex` 归零 |
-| App 进入后台 | 定时器暂停，回到前台自动恢复 |
+| `items` is empty | Renders a blank view, no crash |
+| `items.count == 1` | Scroll disabled, no indicator, no auto-play |
+| `items` replaced at runtime | Resets the collection view, `currentIndex` returns to 0 |
+| App enters background | Timer pauses; resumes automatically on foreground |
 
 ## Demo
 
-打开 `demo/iBannerDemo.xcodeproj`，选择模拟器运行，包含以下示例：
+Open `demo/iBannerDemo.xcodeproj`, select a simulator and run. Includes:
 
-- 自定义 View + Dot / Capsule / 数字指示器
-- 禁用自动播放，手动滑动
-- Peek 效果（iOS 17 原生 ScrollView）
+- Custom view + Dot / Capsule / numeric indicator
+- Auto-play disabled, manual swipe only
+- Peek effect — infinite scroll variant and native ScrollView variant
 
-## 设计说明
+## Design Notes
 
-- 内核为 UICollectionView 虚拟多 section（500 个 section × 真实 item 数），`isPagingEnabled = true` 由系统处理所有翻页与减速，快速连续滑动天然支持
-- 对外接口完全 SwiftUI 化，使用方感知不到 UIKit
-- 图片加载使用系统 `AsyncImage`，零三方依赖
-- Capsule 指示器通过 `scrollProgress`（`contentOffset / pageWidth - stableGlobalItem`）实现逐帧跟手动画
+- Core: UICollectionView with 500 virtual sections × real item count. `isPagingEnabled = true` lets the system handle all paging and deceleration natively — fast consecutive swiping works out of the box.
+- The public API is entirely SwiftUI; callers have no exposure to UIKit.
+- Image loading uses the system `AsyncImage` — zero third-party dependencies.
+- The capsule indicator interpolates color and width in sync with `scrollProgress` (`contentOffset / pageWidth − stableGlobalItem`), producing smooth finger-tracking animation.
 
-## 不在范围内
+## Out of Scope
 
-- 图片缓存（可在自定义 View 中接入 Kingfisher / SDWebImage）
-- 视差滚动、Peek 效果（见 Demo 中的原生 ScrollView 实现）
-- 竖向滚动
+- Image caching (integrate Kingfisher / SDWebImage in your custom view)
+- Parallax scrolling, peek effect (see the Demo for the native ScrollView implementation)
+- Vertical scrolling
 - macOS / tvOS
