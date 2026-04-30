@@ -16,7 +16,7 @@ iOS 17+ 通用 Banner 无限轮播组件，UICollectionView 虚拟无限 section
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/ibabyblue/iBannerView", from: "0.0.2")
+    .package(url: "https://github.com/ibabyblue/iBanner", from: "0.0.2")
 ]
 ```
 
