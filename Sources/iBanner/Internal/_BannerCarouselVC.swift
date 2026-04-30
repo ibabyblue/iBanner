@@ -1,31 +1,80 @@
-// Sources/iBanner/Internal/_BannerCarouselVC.swift
 import UIKit
 import SwiftUI
 
+// MARK: - Cell
+
+private final class _BannerCell<Content: View>: UICollectionViewCell {
+
+    private(set) var hostingController: UIHostingController<Content>?
+
+    func configure(with content: Content, parent: UIViewController) {
+        if let hc = hostingController {
+            hc.rootView = content
+        } else {
+            let hc = UIHostingController(rootView: content)
+            hc.view.backgroundColor = .clear
+            parent.addChild(hc)
+            contentView.addSubview(hc.view)
+            hc.view.frame = contentView.bounds
+            hc.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            hc.didMove(toParent: parent)
+            hostingController = hc
+        }
+    }
+
+    func detach(from parent: UIViewController) {
+        guard let hc = hostingController else { return }
+        hc.willMove(toParent: nil)
+        hc.view.removeFromSuperview()
+        hc.removeFromParent()
+        hostingController = nil
+    }
+}
+
+// MARK: - ViewController
+//
+// 无限轮播内核：UICollectionView 虚拟 500 个 section，每 section 包含真实 items。
+// isPagingEnabled 由系统处理所有翻页与减速，快速连续滑动天然支持，无需手动 reset contentOffset。
+
 @MainActor
-final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewController, UIScrollViewDelegate {
+final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewController,
+    UICollectionViewDataSource, UICollectionViewDelegate {
 
     // MARK: - State
+
     private(set) var items: [Item]
     private var contentBuilder: (Item) -> Content
     private(set) var currentIndex: Int = 0
 
+    // 虚拟 section 总数；从中间 section 出发，两端各可滑动 250 轮，实际无限
+    private static var totalSections: Int { 500 }
+    private var startSection: Int { Self.totalSections / 2 }
+
+    // 当前稳定停留的全局 item 下标（跨所有虚拟 section）
+    private var stableGlobalItem: Int = 0
+    private var lastLayoutSize: CGSize = .zero
+    private var hasSetInitialOffset = false
+
     // MARK: - UIKit
-    private let scrollView = UIScrollView()
-    private var leftHosting: UIHostingController<Content>?
-    private var centerHosting: UIHostingController<Content>?
-    private var rightHosting: UIHostingController<Content>?
-    private var isLayoutInitialized = false
+
+    private var collectionView: UICollectionView!
+    private var flowLayout: UICollectionViewFlowLayout!
 
     // MARK: - Auto Play
+
     private let timerManager = _BannerTimerManager()
     private var autoPlayInterval: TimeInterval?
 
-    // MARK: - Callbacks (set by _BannerRepresentable.updateUIViewController)
+    // MARK: - Callbacks
+
+    /// 页面稳定落点时触发，同时更新指示器并调用用户的 onBannerPageChanged
     var onPageChanged: ((Int, Item) -> Void)?
+    /// 拖拽提前提交最近页时触发，仅更新指示器（dot），不触发用户回调
+    var onCurrentIndexChanged: ((Int) -> Void)?
     var onScrollProgressChanged: ((CGFloat) -> Void)?
 
     // MARK: - Init
+
     init(items: [Item], contentBuilder: @escaping (Item) -> Content) {
         self.items = items
         self.contentBuilder = contentBuilder
@@ -35,17 +84,33 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
     required init?(coder: NSCoder) { fatalError("not supported") }
 
     // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
-        setupScrollView()
-        setupHostings()
+        setupCollectionView()
         registerAppStateNotifications()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        layoutHostings()
+        let size = view.bounds.size
+        guard size.width > 0, size.height > 0 else { return }
+
+        let sizeChanged = size != lastLayoutSize
+        lastLayoutSize = size
+        flowLayout.itemSize = size
+
+        guard items.count > 1 else { return }
+
+        if !hasSetInitialOffset {
+            hasSetInitialOffset = true
+            stableGlobalItem = startSection * items.count + currentIndex
+            collectionView.contentOffset = CGPoint(x: CGFloat(stableGlobalItem) * size.width, y: 0)
+        } else if sizeChanged {
+            // 旋转或尺寸变化时，按 stableGlobalItem 重新对齐
+            collectionView.contentOffset = CGPoint(x: CGFloat(stableGlobalItem) * size.width, y: 0)
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -60,105 +125,38 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
 
     deinit {
         NotificationCenter.default.removeObserver(self)
-        // timerManager 由其自身的 deinit 负责清理
     }
 
     // MARK: - Setup
-    private func setupScrollView() {
-        scrollView.isPagingEnabled = true
-        scrollView.showsHorizontalScrollIndicator = false
-        scrollView.bounces = false
-        scrollView.backgroundColor = .clear
-        scrollView.delegate = self
-        view.addSubview(scrollView)
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+
+    private func setupCollectionView() {
+        flowLayout = UICollectionViewFlowLayout()
+        flowLayout.scrollDirection = .horizontal
+        flowLayout.minimumLineSpacing = 0
+        flowLayout.minimumInteritemSpacing = 0
+
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: flowLayout)
+        collectionView.isPagingEnabled = true
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.backgroundColor = .clear
+        collectionView.bounces = false
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.register(_BannerCell<Content>.self, forCellWithReuseIdentifier: "cell")
+        collectionView.isScrollEnabled = items.count > 1
+
+        view.addSubview(collectionView)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
-    private func setupHostings() {
-        if items.count <= 1 {
-            setupSingleOrEmptyPage()
-        } else {
-            setupThreePages()
-        }
-    }
-
-    private func setupSingleOrEmptyPage() {
-        guard !items.isEmpty else { return }
-        let hosting = makeHosting(at: 0)
-        attach(hosting)
-        centerHosting = hosting
-        scrollView.isScrollEnabled = false
-    }
-
-    private func setupThreePages() {
-        let count = items.count
-        let left = makeHosting(at: _BannerIndexCalculator.leftIndex(current: currentIndex, count: count))
-        let center = makeHosting(at: currentIndex)
-        let right = makeHosting(at: _BannerIndexCalculator.rightIndex(current: currentIndex, count: count))
-        [left, center, right].forEach { attach($0) }
-        leftHosting = left
-        centerHosting = center
-        rightHosting = right
-    }
-
-    private func layoutHostings() {
-        let w = view.bounds.width
-        let h = view.bounds.height
-        guard w > 0, h > 0 else { return }
-
-        if items.count > 1 {
-            scrollView.contentSize = CGSize(width: w * 3, height: h)
-            leftHosting?.view.frame   = CGRect(x: 0,       y: 0, width: w, height: h)
-            centerHosting?.view.frame = CGRect(x: w,       y: 0, width: w, height: h)
-            rightHosting?.view.frame  = CGRect(x: w * 2,   y: 0, width: w, height: h)
-            if !isLayoutInitialized {
-                scrollView.contentOffset = CGPoint(x: w, y: 0)
-                isLayoutInitialized = true
-            }
-        } else {
-            scrollView.contentSize = CGSize(width: w, height: h)
-            centerHosting?.view.frame = CGRect(x: 0, y: 0, width: w, height: h)
-        }
-    }
-
-    // MARK: - Helpers
-    private func makeHosting(at index: Int) -> UIHostingController<Content> {
-        let hosting = UIHostingController(rootView: contentBuilder(items[index]))
-        hosting.view.backgroundColor = .clear
-        return hosting
-    }
-
-    private func attach(_ hosting: UIHostingController<Content>) {
-        addChild(hosting)
-        scrollView.addSubview(hosting.view)
-        hosting.didMove(toParent: self)
-    }
-
-    private func detachAll() {
-        [leftHosting, centerHosting, rightHosting].compactMap { $0 }.forEach {
-            $0.willMove(toParent: nil)
-            $0.view.removeFromSuperview()
-            $0.removeFromParent()
-        }
-        leftHosting = nil
-        centerHosting = nil
-        rightHosting = nil
-    }
-
-    private func refreshPageContents() {
-        let count = items.count
-        leftHosting?.rootView   = contentBuilder(items[_BannerIndexCalculator.leftIndex(current: currentIndex, count: count)])
-        centerHosting?.rootView = contentBuilder(items[currentIndex])
-        rightHosting?.rootView  = contentBuilder(items[_BannerIndexCalculator.rightIndex(current: currentIndex, count: count)])
-    }
-
     // MARK: - Auto Play
+
     func setAutoPlay(interval: TimeInterval?) {
         autoPlayInterval = interval
         timerManager.stop()
@@ -174,11 +172,15 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
 
     private func scrollToNext() {
         let w = view.bounds.width
-        // 向右滑动到第三页（右侧 slot）
-        scrollView.setContentOffset(CGPoint(x: w * 2, y: 0), animated: true)
+        guard w > 0 else { return }
+        collectionView.setContentOffset(
+            CGPoint(x: CGFloat(stableGlobalItem + 1) * w, y: 0),
+            animated: true
+        )
     }
 
-    // MARK: - Update (called from updateUIViewController)
+    // MARK: - Update (called from _BannerRepresentable.updateUIViewController)
+
     func update(items newItems: [Item], contentBuilder newBuilder: @escaping (Item) -> Content) {
         let oldIDs = items.map(\.id)
         let newIDs = newItems.map(\.id)
@@ -186,60 +188,92 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
         items = newItems
 
         if oldIDs != newIDs {
-            // 数据源变化：重建三页，index 归零
             currentIndex = 0
-            isLayoutInitialized = false
+            hasSetInitialOffset = false
             timerManager.stop()
-            detachAll()
-            setupHostings()
-            layoutHostings()
+            collectionView.isScrollEnabled = newItems.count > 1
+            collectionView.reloadData()
+            view.setNeedsLayout()
         } else {
-            // 仅数据内容变化（如图片 URL 更新）：刷新内容
-            refreshPageContents()
+            // 仅内容变化（如图片 URL 更新），刷新可见 cell
+            for case let cell as _BannerCell<Content> in collectionView.visibleCells {
+                guard let indexPath = collectionView.indexPath(for: cell) else { continue }
+                cell.configure(with: contentBuilder(items[indexPath.item]), parent: self)
+            }
         }
     }
 
     // MARK: - App State
+
     private func registerAppStateNotifications() {
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appDidEnterBackground),
-            name: UIApplication.didEnterBackgroundNotification,
-            object: nil
-        )
+            self, selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(appWillEnterForeground),
-            name: UIApplication.willEnterForegroundNotification,
-            object: nil
-        )
+            self, selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
-    @objc private func appDidEnterBackground() {
-        timerManager.stop()
+    @objc private func appDidEnterBackground() { timerManager.stop() }
+    @objc private func appWillEnterForeground() { startAutoPlayIfNeeded() }
+
+    // MARK: - UICollectionViewDataSource
+
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        items.count > 1 ? Self.totalSections : 1
     }
 
-    @objc private func appWillEnterForeground() {
-        startAutoPlayIfNeeded()
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        items.count
     }
 
-    // MARK: - UIScrollViewDelegate
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        collectionView.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard let cell = cell as? _BannerCell<Content>, !items.isEmpty else { return }
+        cell.configure(with: contentBuilder(items[indexPath.item]), parent: self)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        (cell as? _BannerCell<Content>)?.detach(from: self)
+    }
+
+    // MARK: - UIScrollViewDelegate (via UICollectionViewDelegate)
+
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         timerManager.pause()
+        // 新一次拖拽打断上次减速时，把 stableGlobalItem 对齐到最近页。
+        // currentIndex 与 scrollProgress 必须在同一 UIKit 回调里同步更新，
+        // 让 SwiftUI 批进同一 render cycle，避免 capsule 出现错位帧。
+        guard items.count > 1, hasSetInitialOffset else { return }
+        let w = view.bounds.width
+        guard w > 0 else { return }
+        let nearest = Int(round(scrollView.contentOffset.x / w))
+        guard nearest != stableGlobalItem else { return }
+        stableGlobalItem = nearest
+        // 先更新 progress（与 currentIndex 同帧），避免 capsule 闪烁
+        let newProgress = max(-1, min(1, scrollView.contentOffset.x / w - CGFloat(nearest)))
+        onScrollProgressChanged?(newProgress)
+        let newDataIndex = nearest % items.count
+        if newDataIndex != currentIndex {
+            currentIndex = newDataIndex
+            onCurrentIndexChanged?(currentIndex)
+        }
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        guard items.count > 1, isLayoutInitialized else { return }
+        guard items.count > 1, hasSetInitialOffset else { return }
         let w = view.bounds.width
         guard w > 0 else { return }
-        let progress = (scrollView.contentOffset.x - w) / w  // -1...1
-        onScrollProgressChanged?(progress)
+        // 夹到 -1...1：单次拖拽跨页时的兜底，避免 capsule 宽度越界
+        let raw = scrollView.contentOffset.x / w - CGFloat(stableGlobalItem)
+        onScrollProgressChanged?(max(-1, min(1, raw)))
     }
 
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        if !decelerate {
-            handleScrollEnd(scrollView)
-        }
+        if !decelerate { handleScrollEnd(scrollView) }
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -253,21 +287,21 @@ final class _BannerCarouselVC<Item: Identifiable, Content: View>: UIViewControll
     private func handleScrollEnd(_ scrollView: UIScrollView) {
         guard items.count > 1 else { return }
         let w = view.bounds.width
-        let newIndex = _BannerIndexCalculator.updatedIndex(
-            currentIndex: currentIndex,
-            contentOffsetX: scrollView.contentOffset.x,
-            pageWidth: w,
-            count: items.count
-        )
+        guard w > 0 else { return }
 
-        if newIndex != currentIndex {
-            currentIndex = newIndex
-            refreshPageContents()
-            scrollView.setContentOffset(CGPoint(x: w, y: 0), animated: false)
+        let newGlobalItem = Int(round(scrollView.contentOffset.x / w))
+        let newDataIndex = newGlobalItem % items.count
+        stableGlobalItem = newGlobalItem
+
+        // progress 必须与 currentIndex 在同一 UIKit 回调里归零，
+        // 让 SwiftUI 批进同一 render cycle，避免 capsule 出现跳两次的错位帧。
+        onScrollProgressChanged?(0)
+
+        if newDataIndex != currentIndex {
+            currentIndex = newDataIndex
             onPageChanged?(currentIndex, items[currentIndex])
         }
 
-        // 无论是否换页都重置定时器（手动滑到同位置时也重置）
         timerManager.reset()
     }
 }

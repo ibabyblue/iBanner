@@ -30,8 +30,11 @@ struct _BannerRepresentable<Item: Identifiable, Content: View>: UIViewController
     }
 
     private func updateCallbacks(on vc: _BannerCarouselVC<Item, Content>) {
+        vc.onCurrentIndexChanged = { index in
+            currentIndex = index        // 快速滑动中途仅更新指示器
+        }
         vc.onPageChanged = { [onPageChanged] index, item in
-            currentIndex = index
+            currentIndex = index        // 落点稳定后更新指示器 + 触发用户回调
             onPageChanged?(index, item)
         }
         vc.onScrollProgressChanged = { progress in
