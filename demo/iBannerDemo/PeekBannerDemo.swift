@@ -1,76 +1,98 @@
 import SwiftUI
 
-// Peek 效果使用 iOS 17 原生 ScrollView API 实现。
-// iBanner 的三页虚拟复用方案让 ScrollView 与容器等宽，天然不支持露出相邻 item。
-// 两者定位互补：iBanner 做全屏广告 Banner，原生 ScrollView 做卡片 Peek 列表。
-
 struct PeekBannerDemo: View {
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 32) {
 
-                // 1. 标准 Peek：两侧各露出约 30pt
-                PeekSection(
-                    title: "标准 Peek",
-                    subtitle: "card 宽 = 屏宽 - 60，两侧各露出 ~30pt"
-                ) {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 12) {
-                            ForEach(sampleCards) { card in
-                                GradientCardView(card: card, cornerRadius: 14)
-                                    .containerRelativeFrame(.horizontal) { w, _ in w - 60 }
-                                    .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .contentMargins(.horizontal, 30, for: .scrollContent)
-                    .scrollTargetBehavior(.viewAligned)
-                    .scrollIndicators(.hidden)
-                    .frame(height: 180)
-                }
+                // ── 无限 Peek ──────────────────────────────────────────
+                SectionHeader(
+                    title: "无限 Peek",
+                    subtitle: "UICollectionView 虚拟 section，支持连续快速滑动"
+                )
 
-                // 2. 大 Peek：card 宽 75%，相邻露出更多
-                PeekSection(
-                    title: "大 Peek",
-                    subtitle: "card 宽 75% 屏宽，视觉层次感更强"
-                ) {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 16) {
-                            ForEach(sampleCards) { card in
-                                GradientCardView(card: card, cornerRadius: 18)
-                                    .containerRelativeFrame(.horizontal) { w, _ in w * 0.75 }
-                                    .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .contentMargins(.horizontal, 30, for: .scrollContent)
-                    .scrollTargetBehavior(.viewAligned)
-                    .scrollIndicators(.hidden)
-                    .frame(height: 160)
+                // 1. 标准无限 Peek（两侧各露出 30pt）
+                PeekLabel(text: "标准 Peek · 30pt inset")
+                InfinitePeekBannerView(
+                    items: sampleCards,
+                    peekInset: 30,
+                    itemSpacing: 12
+                ) { card in
+                    GradientCardView(card: card, cornerRadius: 14)
+                        .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
                 }
+                .frame(height: 180)
 
-                // 3. 竖向高卡片 Peek
-                PeekSection(
-                    title: "高卡片 Peek",
-                    subtitle: "card 宽 80%，适合内容丰富的卡片场景"
-                ) {
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 14) {
-                            ForEach(sampleCards) { card in
-                                GradientCardView(card: card, cornerRadius: 20)
-                                    .containerRelativeFrame(.horizontal) { w, _ in w * 0.8 }
-                                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .contentMargins(.horizontal, 24, for: .scrollContent)
-                    .scrollTargetBehavior(.viewAligned)
-                    .scrollIndicators(.hidden)
-                    .frame(height: 220)
+                // 2. 大 Peek（两侧各露出 50pt）
+                PeekLabel(text: "大 Peek · 50pt inset")
+                InfinitePeekBannerView(
+                    items: sampleCards,
+                    peekInset: 50,
+                    itemSpacing: 16
+                ) { card in
+                    GradientCardView(card: card, cornerRadius: 18)
+                        .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
                 }
+                .frame(height: 160)
+
+                Divider().padding(.horizontal)
+
+                // ── 有限 Peek（原生 ScrollView）──────────────────────────
+                SectionHeader(
+                    title: "有限 Peek（原生 ScrollView）",
+                    subtitle: "iOS 17 viewAligned + containerRelativeFrame，item 固定数量"
+                )
+
+                // 3. 标准 Peek
+                PeekLabel(text: "标准 Peek · 两侧各露出 ~30pt")
+                ScrollView(.horizontal) {
+                    HStack(spacing: 12) {
+                        ForEach(sampleCards) { card in
+                            GradientCardView(card: card, cornerRadius: 14)
+                                .containerRelativeFrame(.horizontal) { w, _ in w - 60 }
+                                .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .contentMargins(.horizontal, 30, for: .scrollContent)
+                .scrollTargetBehavior(.viewAligned)
+                .scrollIndicators(.hidden)
+                .frame(height: 180)
+
+                // 4. 大 Peek
+                PeekLabel(text: "大 Peek · card 宽 75%")
+                ScrollView(.horizontal) {
+                    HStack(spacing: 16) {
+                        ForEach(sampleCards) { card in
+                            GradientCardView(card: card, cornerRadius: 18)
+                                .containerRelativeFrame(.horizontal) { w, _ in w * 0.75 }
+                                .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .contentMargins(.horizontal, 30, for: .scrollContent)
+                .scrollTargetBehavior(.viewAligned)
+                .scrollIndicators(.hidden)
+                .frame(height: 160)
+
+                // 5. 高卡片 Peek
+                PeekLabel(text: "高卡片 Peek · card 宽 80%")
+                ScrollView(.horizontal) {
+                    HStack(spacing: 14) {
+                        ForEach(sampleCards) { card in
+                            GradientCardView(card: card, cornerRadius: 20)
+                                .containerRelativeFrame(.horizontal) { w, _ in w * 0.8 }
+                                .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .contentMargins(.horizontal, 24, for: .scrollContent)
+                .scrollTargetBehavior(.viewAligned)
+                .scrollIndicators(.hidden)
+                .frame(height: 220)
 
             }
             .padding(.vertical, 16)
@@ -80,23 +102,31 @@ struct PeekBannerDemo: View {
     }
 }
 
-private struct PeekSection<Content: View>: View {
+// MARK: - Private helpers
+
+private struct SectionHeader: View {
     let title: String
     let subtitle: String
-    @ViewBuilder let content: () -> Content
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+                .font(.headline)
                 .padding(.horizontal)
             Text(subtitle)
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal)
-            content()
         }
+    }
+}
+
+private struct PeekLabel: View {
+    let text: String
+    var body: some View {
+        Text(text)
+            .font(.subheadline)
+            .fontWeight(.semibold)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal)
     }
 }

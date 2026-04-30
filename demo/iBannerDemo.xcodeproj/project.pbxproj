@@ -12,6 +12,7 @@
 		AA0000000000000000000025 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000024 /* SampleData.swift */; };
 		AA0000000000000000000027 /* FullScreenBannerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000026 /* FullScreenBannerDemo.swift */; };
 		AA0000000000000000000029 /* PeekBannerDemo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000028 /* PeekBannerDemo.swift */; };
+		AA0000000000000000000051 /* InfinitePeekBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000050 /* InfinitePeekBannerView.swift */; };
 		AA0000000000000000000031 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000030 /* Assets.xcassets */; };
 		AA0000000000000000000042 /* iBanner in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000041 /* iBanner */; };
 /* End PBXBuildFile section */
@@ -23,6 +24,7 @@
 		AA0000000000000000000024 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		AA0000000000000000000026 /* FullScreenBannerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenBannerDemo.swift; sourceTree = "<group>"; };
 		AA0000000000000000000028 /* PeekBannerDemo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekBannerDemo.swift; sourceTree = "<group>"; };
+		AA0000000000000000000050 /* InfinitePeekBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfinitePeekBannerView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000030 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -62,6 +64,7 @@
 				AA0000000000000000000024 /* SampleData.swift */,
 				AA0000000000000000000026 /* FullScreenBannerDemo.swift */,
 				AA0000000000000000000028 /* PeekBannerDemo.swift */,
+				AA0000000000000000000050 /* InfinitePeekBannerView.swift */,
 				AA0000000000000000000030 /* Assets.xcassets */,
 			);
 			path = iBannerDemo;
@@ -147,6 +150,7 @@
 				AA0000000000000000000025 /* SampleData.swift in Sources */,
 				AA0000000000000000000027 /* FullScreenBannerDemo.swift in Sources */,
 				AA0000000000000000000029 /* PeekBannerDemo.swift in Sources */,
+				AA0000000000000000000051 /* InfinitePeekBannerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
