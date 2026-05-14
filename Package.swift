@@ -2,20 +2,20 @@
 import PackageDescription
 
 let package = Package(
-    name: "iBanner",
+    name: "IBanner",
     platforms: [.iOS(.v17)],
     products: [
-        .library(name: "iBanner", targets: ["iBanner"]),
+        .library(name: "IBanner", targets: ["IBanner"]),
     ],
     targets: [
         .target(
-            name: "iBanner",
-            path: "Sources/iBanner"
+            name: "IBanner",
+            path: "Sources/IBanner"
         ),
         .testTarget(
-            name: "iBannerTests",
-            dependencies: ["iBanner"],
-            path: "Tests/iBannerTests"
+            name: "IBannerTests",
+            dependencies: ["IBanner"],
+            path: "Tests/IBannerTests"
         ),
     ]
 )

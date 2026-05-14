@@ -1,4 +1,4 @@
-# iBanner
+# IBanner
 
 A universal infinite-scroll banner component for iOS 17+. UICollectionView virtual-section core, SwiftUI public API, zero third-party dependencies.
 
@@ -32,13 +32,13 @@ In Xcode choose **File → Add Package Dependencies**, enter the repository URL,
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/ibabyblue/iBanner", from: "0.0.4")
+    .package(url: "https://github.com/ibabyblue/IBanner", from: "0.0.5")
 ],
 targets: [
     .target(
         name: "YourTarget",
         dependencies: [
-            .product(name: "iBanner", package: "iBanner")
+            .product(name: "IBanner", package: "IBanner")
         ]
     )
 ]
@@ -49,7 +49,7 @@ targets: [
 ### Custom View (recommended)
 
 ```swift
-import iBanner
+import IBanner
 
 IBannerView(items: items) { item in
     MyCard(item: item)
@@ -166,7 +166,7 @@ public protocol IBannerDisplayable: Identifiable {
 
 ## Demo
 
-Open `demo/iBannerDemo.xcodeproj`, select a simulator and run. Covers two scenarios:
+Open `demo/IBannerDemo.xcodeproj`, select a simulator and run. Covers two scenarios:
 
 - **Full-Screen** — custom view + Dot / Capsule / numeric indicator; auto-play on/off
 - **Peek** — infinite-scroll Peek (virtual-section core) and native `ScrollView` Peek variants
@@ -187,4 +187,4 @@ Open `demo/iBannerDemo.xcodeproj`, select a simulator and run. Covers two scenar
 
 ## License
 
-iBanner is available under the MIT license. See the [LICENSE](LICENSE) file for details.
+IBanner is available under the MIT license. See the [LICENSE](LICENSE) file for details.

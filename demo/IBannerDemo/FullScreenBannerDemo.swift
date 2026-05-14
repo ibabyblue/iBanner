@@ -1,5 +1,5 @@
 import SwiftUI
-import iBanner
+import IBanner
 
 struct FullScreenBannerDemo: View {
     var body: some View {

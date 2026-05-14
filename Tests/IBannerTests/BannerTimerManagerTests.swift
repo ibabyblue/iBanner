@@ -1,5 +1,5 @@
 import XCTest
-@testable import iBanner
+@testable import IBanner
 
 @MainActor
 final class BannerTimerManagerTests: XCTestCase {
