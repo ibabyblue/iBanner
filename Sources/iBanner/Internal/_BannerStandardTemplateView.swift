@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct _BannerStandardTemplateView<Item: BannerDisplayable>: View {
+struct _BannerStandardTemplateView<Item: IBannerDisplayable>: View {
     let item: Item
 
     var body: some View {

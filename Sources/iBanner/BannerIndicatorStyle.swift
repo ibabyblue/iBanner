@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum BannerIndicatorStyle {
+public enum IBannerIndicatorStyle {
     case dot(
         activeColor: Color = .white,
         inactiveColor: Color = .white.opacity(0.35),

@@ -1,7 +1,7 @@
 // Sources/iBanner/BannerView.swift
 import SwiftUI
 
-public struct BannerView<Item: Identifiable, Content: View>: View {
+public struct IBannerView<Item: Identifiable, Content: View>: View {
 
     // MARK: - Data
     private let items: [Item]
@@ -10,7 +10,7 @@ public struct BannerView<Item: Identifiable, Content: View>: View {
 
     // MARK: - Configuration (set via modifiers)
     private var autoPlayInterval: TimeInterval? = 3
-    private var indicatorStyle: BannerIndicatorStyle = .dot()
+    private var indicatorStyle: IBannerIndicatorStyle = .dot()
     private var indicatorAlignment: Alignment = .bottom
     private var onPageChangedHandler: ((Int, Item) -> Void)?
 
@@ -78,7 +78,7 @@ public struct BannerView<Item: Identifiable, Content: View>: View {
 }
 
 // MARK: - Init: custom view + custom indicator
-extension BannerView {
+extension IBannerView {
     public init<Indicator: View>(
         items: [Item],
         @ViewBuilder content: @escaping (Item) -> Content,
@@ -90,10 +90,10 @@ extension BannerView {
     }
 }
 
-// MARK: - Init: built-in template (Item: BannerDisplayable)
-extension BannerView where Item: BannerDisplayable, Content == _BannerStandardTemplateView<Item> {
+// MARK: - Init: built-in template (Item: IBannerDisplayable)
+extension IBannerView where Item: IBannerDisplayable, Content == _BannerStandardTemplateView<Item> {
     // Cannot be `public` because the constraint references the internal type _BannerStandardTemplateView.
-    // Callers use BannerView(items:) and type inference resolves to this overload at the call site.
+    // Callers use IBannerView(items:) and type inference resolves to this overload at the call site.
     init(items: [Item]) {
         self.init(items: items) { item in
             _BannerStandardTemplateView(item: item)
@@ -102,27 +102,27 @@ extension BannerView where Item: BannerDisplayable, Content == _BannerStandardTe
 }
 
 // MARK: - View Modifiers
-extension BannerView {
+extension IBannerView {
 
-    public func bannerAutoPlay(interval: TimeInterval?) -> BannerView {
+    public func bannerAutoPlay(interval: TimeInterval?) -> IBannerView {
         var copy = self
         copy.autoPlayInterval = interval
         return copy
     }
 
-    public func bannerIndicator(_ style: BannerIndicatorStyle) -> BannerView {
+    public func bannerIndicator(_ style: IBannerIndicatorStyle) -> IBannerView {
         var copy = self
         copy.indicatorStyle = style
         return copy
     }
 
-    public func bannerIndicatorAlignment(_ alignment: Alignment) -> BannerView {
+    public func bannerIndicatorAlignment(_ alignment: Alignment) -> IBannerView {
         var copy = self
         copy.indicatorAlignment = alignment
         return copy
     }
 
-    public func onBannerPageChanged(_ action: @escaping (Int, Item) -> Void) -> BannerView {
+    public func onBannerPageChanged(_ action: @escaping (Int, Item) -> Void) -> IBannerView {
         var copy = self
         copy.onPageChangedHandler = action
         return copy
